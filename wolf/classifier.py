@@ -13,6 +13,8 @@ from wolf.modules import DeQuantizer
 from wolf.modules import Discriminator
 from wolf.modules import Generator
 
+from wolf.nnet.resnets.digit_classifier import DigitResNet, DigitFeatureExtractor
+
 
 class WolfCore(nn.Module):
     """
@@ -26,32 +28,24 @@ class WolfCore(nn.Module):
 
     def sync(self):
         self.generator.sync()
-        self.discriminator.sync()
+        #self.discriminator.sync()
 
     def init(self, x, y=None, init_scale=1.0):
-        z = self.discriminator.init(x, y=y, init_scale=init_scale)[0]
+        #z = self.discriminator.init(x, y=y, init_scale=init_scale)[0]
+        z = self.discriminator(x)
         self.dequantizer.init(x, init_scale=init_scale)
         self.generator.init(x, h=z, init_scale=init_scale)
 
-    def synthesize(self, nums, image_size, tau=1.0, n_bits=8, device=torch.device('cpu')):
-        # [nsamples, imagesize]
-        epsilon = torch.randn(nums, *image_size, device=device)
-        epsilon *= tau
-        z = self.discriminator.sample_from_prior(nums, device)
-        imgs, _ = self.generator.generate(epsilon, h=z)
-        imgs = postprocess(imgs, n_bits=n_bits)
-        return imgs
-
     def encode_global(self, data, y=None, n_bits=8, nsamples=1, random=False):
         x = preprocess(data, n_bits)
-        z, _ = self.discriminator.sample_from_posterior(x, y=y, nsamples=nsamples, random=random)
+        z = self.discriminator(x)
         return z
 
     def encode(self, data, y=None, n_bits=8, nsamples=1, random=False):
         size = data.size()
         x = preprocess(data, n_bits)
         # [batch, nsamples, dim]
-        z, _ = self.discriminator.sample_from_posterior(x, y=y, nsamples=nsamples, random=random)
+        z = self.discriminator(x).unsqueeze(1)
         if random:
             # [batch, nsamples, c, h, w]
             u, _ = self.dequantizer.dequantize(x, nsamples=nsamples)
@@ -61,6 +55,7 @@ class WolfCore(nn.Module):
             x = x.unsqueeze(1) + x.new_zeros(size[0], nsamples, *size[1:])
         # [batch*nsamples, dim]
         zz = z.view(-1, z.size(2)) if z is not None else z
+        #zz = z
         # [batch*nsamples, c, h, w]
         xx = x.view(-1, *size[1:])
         epsilon = self.generator.encode(xx, h=zz)
@@ -72,6 +67,7 @@ class WolfCore(nn.Module):
         return imgs
 
     def forward(self, data, y=None, n_bits=8, nsamples=1):
+        nsamples = 1
         # [batch, channels, height, width]
         x = preprocess(data, n_bits)
         # [batch, nsamples, channel, height, width]
@@ -79,7 +75,7 @@ class WolfCore(nn.Module):
         # [batch]
         loss_dequant = log_probs_dequant.mean(dim=1)
         # [batch, nsamples, dim]
-        z, kl = self.discriminator.sampling_and_KL(x, y=y, nsamples=nsamples)
+        z = self.discriminator(x)
         # if self.training:
         #     z = z[:, 0] if z is not None else z
         #     u = u[:, 0:1]
@@ -92,13 +88,12 @@ class WolfCore(nn.Module):
         # [batch*nsamples, channels, height, width]
         x = preprocess(data, n_bits, u).view(-1, size[1], size[2], size[3])
         # [batch*nsamples, dim]
-        z = z.view(-1, z.size(2)) if z is not None else z
+        #z = z.view(-1, z.size(2)) if z is not None else z
         # [batch]
         log_probs_gen = self.generator.log_probability(x, h=z).view(size[0], nsamples).mean(dim=1)
 
         loss_gen = log_probs_gen * -1.
-        if kl is None:
-            kl = loss_gen.new_zeros(loss_gen.size(0))
+        kl = torch.zeros(loss_gen.size(0))
         return loss_gen, kl, loss_dequant
 
 
@@ -243,7 +238,7 @@ class WolfModel(nn.Module):
 
     def to_device(self, device):
         assert not self.distribured_enabled
-        self.core.discriminator.to_device(device)
+        self.core.discriminator.net.to(device)
         return self.to(device)
 
     def save(self, model_path):
@@ -264,7 +259,9 @@ class WolfModel(nn.Module):
     def from_params(cls, params: Dict) -> "WolfModel":
         # discriminator
         disc_params = params.pop('discriminator')
-        discriminator = Discriminator.by_name(disc_params.pop('type')).from_params(disc_params)
+        #discriminator = Discriminator.by_name(disc_params.pop('type')).from_params(disc_params)
+        discriminator = DigitFeatureExtractor('mnist_resnet_3channel_compatible.pth')
+        #self.sem_classifier.eval()
         # dequantizer
         dequant_params = params.pop('dequantizer')
         dequantizer = DeQuantizer.by_name(dequant_params.pop('type')).from_params(dequant_params)

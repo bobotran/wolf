@@ -21,7 +21,10 @@ from torchvision.utils import save_image
 
 
 from wolf.data import load_datasets, get_batch, preprocess, postprocess
+
 from wolf import WolfModel
+#from wolf.classifier import WolfModel
+
 from wolf.utils import total_grad_norm
 from wolf.optim import ExponentialScheduler
 
@@ -173,8 +176,9 @@ def reconstruct(args, epoch, val_data, val_index, wolf):
 
     z, epsilon = wolf.encode(img, y=y, n_bits=args.n_bits, random=False)
     epsilon = epsilon.squeeze(1)
+    new_eps = 0.8 * torch.randn_like(epsilon)
     z = z.squeeze(1) if z is not None else z
-    img_recon = wolf.decode(epsilon, z=z, n_bits=args.n_bits)
+    img_recon = wolf.decode(new_eps, z=z, n_bits=args.n_bits)
 
     img = postprocess(preprocess(img, args.n_bits), args.n_bits)
     abs_err = img_recon.add(img * -1).abs()
@@ -313,6 +317,7 @@ def train(args, train_loader, train_index, train_sampler, val_loader, val_data, 
         if args.cuda:
             torch.cuda.empty_cache()
         gc.collect()
+
         for step, (data, y) in enumerate(train_loader):
             if step <= last_step:
                 continue
@@ -386,10 +391,11 @@ def train(args, train_loader, train_index, train_sampler, val_loader, val_data, 
                 bits_per_pixel = train_nll / (nx * np.log(2.0))
                 nent_per_pixel = train_nent / (nx * np.log(2.0))
                 curr_lr = scheduler.get_lr()[0]
-                log_info = '[{}/{} ({:.0f}%) lr={:.6f}, {}] NLL: {:.2f}, BPD: {:.4f}, KL: {:.2f}, NENT: {:.2f}, NEPD: {:.4f}'.format(
+                log_info = '[{}/{} ({:.0f}%) lr={:.6f}, {}] NLL: {:.2f}, BPD: {:.4f}, KL: {:.2f}, NENT: {:.2f}, NEPD: {:.4f} GradNorm: {:.4f}'.format(
                     step * batch_size * args.world_size, len(train_index),
                     100. * step * batch_size * args.world_size / len(train_index), curr_lr, num_nans,
-                    train_nll, bits_per_pixel, train_kl, train_nent, nent_per_pixel)
+                    train_nll, bits_per_pixel, train_kl, train_nent, nent_per_pixel,
+                    grad_norm)
 
                 sys.stdout.write(log_info)
                 sys.stdout.flush()
@@ -460,7 +466,7 @@ def train(args, train_loader, train_index, train_sampler, val_loader, val_data, 
                         reconstruct(args, epoch, val_data, val_index, wolf)
                     except RuntimeError:
                         print('Reconstruction failed.')
-                    try:
+                    try: #TODO
                         sample(args, epoch, wolf)
                     except RuntimeError:
                         print('Sampling failed')

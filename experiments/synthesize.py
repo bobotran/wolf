@@ -15,8 +15,8 @@ import signal
 import threading
 import multiprocessing
 import numpy as np
-from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
+#from sklearn.svm import SVC
+#from sklearn.linear_model import LogisticRegression
 
 import torch
 from torch.utils.data.dataloader import DataLoader
@@ -24,7 +24,10 @@ from torchvision.utils import save_image
 
 
 from wolf.data import load_datasets, get_batch, preprocess, postprocess
-from wolf import WolfModel
+
+#from wolf import WolfModel
+from wolf.classifier import WolfModel
+
 from experiments.options import parse_synthesize_args
 from experiments.distributed import ErrorHandler
 
@@ -45,7 +48,7 @@ def setup(args):
         dataset = dataset + '_' + args.category
     image_size = args.image_size
     check_dataset()
-    num_class = 10 if dataset == 'cifar10' else None
+    num_class = 10 if dataset == 'cifar10' or dataset == 'mnist' else None
 
     nc = 3
     args.nx = image_size ** 2 * nc
@@ -257,7 +260,7 @@ def _switch(args, data, index, wolf, clabel):
         # [nn, nn, 2, 2, c, h, w] -> [nn, 2, nn, 2, c, h, w]
         img = img.view(nn, nn, 2, 2, *image_size).transpose(1, 2)
         img = img.contiguous().view(-1, *image_size).cpu()
-        image_file = 'switch{}.png'.format(clabel + '-' + str(run))
+        image_file = 'switch{}.png'.format(str(clabel) + '-' + str(run))
         save_image(img, os.path.join(args.result_path, image_file), nrow=2 * nn)
 
 

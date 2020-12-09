@@ -10,7 +10,7 @@ def load_datasets(dataset, image_size, data_path):
     if dataset == 'omniglot':
         return load_omniglot()
     elif dataset == 'mnist':
-        return load_mnist()
+        return load_mnist(image_size, data_path)
     elif dataset.startswith('lsun'):
         category = None if dataset == 'lsun' else dataset[5:]
         return load_lsun(data_path, category, image_size)
@@ -43,16 +43,12 @@ def load_omniglot():
     return [(train_data[i], train_label[i]) for i in range(len(train_data))], \
            [(test_data[i], test_label[i]) for i in range(len(test_data))]
 
+def load_mnist(image_size, data_path):
+    transform_fn = transforms.Compose([transforms.Resize(image_size), transforms.Grayscale(num_output_channels=3), transforms.ToTensor()])
+    train_data = datasets.MNIST(root=data_path, train=True, download=True, transform=transform_fn)
+    test_data = datasets.MNIST(root=data_path, train=False, download=True, transform=transform_fn)
 
-def load_mnist():
-    train_data, train_label = torch.load('data/mnist/processed/training.pt')
-    test_data, test_label = torch.load('data/mnist/processed/test.pt')
-
-    train_data = train_data.float().div(256).unsqueeze(1)
-    test_data = test_data.float().div(256).unsqueeze(1)
-
-    return [(train_data[i], train_label[i]) for i in range(len(train_data))], \
-           [(test_data[i], test_label[i]) for i in range(len(test_data))]
+    return train_data, test_data
 
 
 def load_lsun(data_path, category, image_size):
