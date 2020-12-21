@@ -260,7 +260,8 @@ class WolfModel(nn.Module):
         # discriminator
         disc_params = params.pop('discriminator')
         #discriminator = Discriminator.by_name(disc_params.pop('type')).from_params(disc_params)
-        discriminator = DigitFeatureExtractor('mnist_resnet_3channel_compatible.pth')
+        #discriminator = DigitFeatureExtractor('mnist_embedding10.pth')
+        discriminator = DigitFeatureExtractor(10, 'svhn_embedding10_adm.pth') #TODO
         #self.sem_classifier.eval()
         # dequantizer
         dequant_params = params.pop('dequantizer')

@@ -38,7 +38,7 @@ def parse_args():
     parser.add_argument('--amsgrad', action='store_true', help='AMS Grad')
     parser.add_argument('--grad_clip', type=float, default=0,
                         help='max norm for gradient clip (default 0: no clip')
-    parser.add_argument('--dataset', choices=['cifar10', 'lsun', 'imagenet', 'celeba', 'mnist'],
+    parser.add_argument('--dataset', choices=['cifar10', 'lsun', 'imagenet', 'celeba', 'mnist', 'svhn'],
                         help='data set', required=True)
     parser.add_argument('--category', choices=[None, 'bedroom', 'tower', 'church_outdoor'],
                         help='category', default=None)
@@ -110,7 +110,7 @@ def parse_distributed_args():
     parser.add_argument('--amsgrad', action='store_true', help='AMS Grad')
     parser.add_argument('--grad_clip', type=float, default=0,
                         help='max norm for gradient clip (default 0: no clip')
-    parser.add_argument('--dataset', choices=['cifar10', 'lsun', 'imagenet', 'celeba', 'mnist'],
+    parser.add_argument('--dataset', choices=['cifar10', 'lsun', 'imagenet', 'celeba', 'mnist', 'svhn'],
                         help='data set', required=True)
     parser.add_argument('--category', choices=[None, 'bedroom', 'tower', 'church_outdoor'],
                         help='category', default=None)
@@ -131,7 +131,7 @@ def parse_synthesize_args():
     parser = ArgumentParser(description="Wolf Synthesize")
     parser.add_argument('--mode', choices=['sample', 'reconstruct', 'interpolate', 'switch', 'classify'], help='synthesis mode', required=True)
     parser.add_argument('--seed', type=int, default=None, metavar='S', help='random seed')
-    parser.add_argument('--dataset', choices=['cifar10', 'lsun', 'imagenet', 'celeba', 'mnist'], help='data set', required=True)
+    parser.add_argument('--dataset', choices=['cifar10', 'lsun', 'imagenet', 'celeba', 'mnist', 'svhn'], help='data set', required=True)
     parser.add_argument('--category', choices=[None, 'bedroom', 'tower', 'church_outdoor'],
                         help='category', default=None)
     parser.add_argument('--image_size', type=int, required=True, metavar='N',

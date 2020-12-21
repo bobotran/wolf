@@ -11,6 +11,8 @@ def load_datasets(dataset, image_size, data_path):
         return load_omniglot()
     elif dataset == 'mnist':
         return load_mnist(image_size, data_path)
+    elif dataset == 'svhn':
+        return load_svhn(image_size, data_path)
     elif dataset.startswith('lsun'):
         category = None if dataset == 'lsun' else dataset[5:]
         return load_lsun(data_path, category, image_size)
@@ -47,6 +49,13 @@ def load_mnist(image_size, data_path):
     transform_fn = transforms.Compose([transforms.Resize(image_size), transforms.Grayscale(num_output_channels=3), transforms.ToTensor()])
     train_data = datasets.MNIST(root=data_path, train=True, download=True, transform=transform_fn)
     test_data = datasets.MNIST(root=data_path, train=False, download=True, transform=transform_fn)
+
+    return train_data, test_data
+
+def load_svhn(image_size, data_path):
+    transform_fn = transforms.Compose([transforms.Resize(image_size), transforms.ToTensor()])
+    train_data = datasets.SVHN(root=data_path, split='train', download=True, transform=transform_fn)
+    test_data = datasets.SVHN(root=data_path, split='test', download=True, transform=transform_fn)
 
     return train_data, test_data
 

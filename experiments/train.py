@@ -22,8 +22,8 @@ from torchvision.utils import save_image
 
 from wolf.data import load_datasets, get_batch, preprocess, postprocess
 
-from wolf import WolfModel
-#from wolf.classifier import WolfModel
+#from wolf import WolfModel
+from wolf.classifier import WolfModel
 
 from wolf.utils import total_grad_norm
 from wolf.optim import ExponentialScheduler
@@ -176,7 +176,7 @@ def reconstruct(args, epoch, val_data, val_index, wolf):
 
     z, epsilon = wolf.encode(img, y=y, n_bits=args.n_bits, random=False)
     epsilon = epsilon.squeeze(1)
-    new_eps = 0.8 * torch.randn_like(epsilon)
+    new_eps = 0.8 * torch.randn_like(epsilon) #TODO
     z = z.squeeze(1) if z is not None else z
     img_recon = wolf.decode(new_eps, z=z, n_bits=args.n_bits)
 
@@ -466,9 +466,9 @@ def train(args, train_loader, train_index, train_sampler, val_loader, val_data, 
                         reconstruct(args, epoch, val_data, val_index, wolf)
                     except RuntimeError:
                         print('Reconstruction failed.')
-                    try: #TODO
-                        sample(args, epoch, wolf)
-                    except RuntimeError:
+#                    try: #TODO
+#                        sample(args, epoch, wolf)
+#                    except RuntimeError:
                         print('Sampling failed')
             logging('Best NLL: {:.2f}, KL: {:.2f}, NENT: {:.2f}, BPD: {:.4f}, NEPD: {:.4f}, epoch: {}'.format(
                 best_nll, best_kl, best_nent, best_bpd, best_nepd, best_epoch), log)
