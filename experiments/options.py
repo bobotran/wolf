@@ -8,14 +8,14 @@ def parse_args():
                         help='rank of the process in all distributed processes')
     parser.add_argument("--local_rank", type=int, default=0, metavar='N',
                         help='rank of the process in the machine')
-    parser.add_argument('--config', type=str, help='config file', required=True)
-    parser.add_argument('--batch_size', type=int, default=512, metavar='N',
+    parser.add_argument('--config', type=str, help='config file', default='configs/5level.json')
+    parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 512)')
     parser.add_argument('--eval_batch_size', type=int, default=4, metavar='N',
                         help='input batch size for eval (default: 4)')
-    parser.add_argument('--batch_steps', type=int, default=1, metavar='N',
-                        help='number of steps for each batch (the batch size of each step is batch-size / steps (default: 1)')
-    parser.add_argument('--init_batch_size', type=int, default=1024, metavar='N',
+    parser.add_argument('--batch_steps', type=int, default=8, metavar='N',
+                        help='number of batches for each step. Argument to accumulate_grad.')
+    parser.add_argument('--init_batch_size', type=int, default=8, metavar='N',
                         help='number of instances for model initialization (default: 1024)')
     parser.add_argument('--epochs', type=int, default=500, metavar='N',
                         help='number of epochs to train')
@@ -28,29 +28,38 @@ def parse_args():
     parser.add_argument('--log_interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
-    parser.add_argument('--warmup_steps', type=int, default=500, metavar='N',
+    parser.add_argument('--warmup_steps', type=int, default=50, metavar='N',
                         help='number of steps to warm up (default: 500)')
     parser.add_argument('--lr_decay', type=float, default=0.999997, help='Decay rate of learning rate')
     parser.add_argument('--beta1', type=float, default=0.9, help='beta1 of Adam')
     parser.add_argument('--beta2', type=float, default=0.999, help='beta2 of Adam')
     parser.add_argument('--eps', type=float, default=1e-8, help='eps of Adam')
-    parser.add_argument('--weight_decay', type=float, default=0.0, help='weight for l2 norm decay')
+    parser.add_argument('--weight_decay', type=float, default=1e-6, help='weight for l2 norm decay')
     parser.add_argument('--amsgrad', action='store_true', help='AMS Grad')
     parser.add_argument('--grad_clip', type=float, default=0,
                         help='max norm for gradient clip (default 0: no clip')
-    parser.add_argument('--dataset', choices=['cifar10', 'lsun', 'imagenet', 'celeba'],
+    parser.add_argument('--dataset', choices=['ct', 'xray', 'mnist'],
                         help='data set', required=True)
     parser.add_argument('--category', choices=[None, 'bedroom', 'tower', 'church_outdoor'],
                         help='category', default=None)
-    parser.add_argument('--image_size', type=int, required=True, metavar='N',
+    parser.add_argument('--image_size', type=int, default=64, metavar='N',
                         help='input image size')
-    parser.add_argument('--workers', default=4, type=int, metavar='N',
+    parser.add_argument('--workers', default=8, type=int, metavar='N',
                         help='number of data loading workers (default: 4)')
     parser.add_argument('--n_bits', type=int, default=8, metavar='N',
                         help='number of bits per pixel.')
-    parser.add_argument('--model_path', help='path for saving model file.', required=True)
-    parser.add_argument('--data_path', help='path for data file.', required=True)
+    # parser.add_argument('--model_path', help='path for saving model file.', required=True)
+    # parser.add_argument('--data_path', help='path for data file.', required=True)
     parser.add_argument('--recover', type=int, default=-1, help='recover the model from disk.')
+
+    parser.add_argument('--num_channels', type=int, default=1, help='Number of image channels')
+    parser.add_argument('--tau', type=float, default=1.0, metavar='S',
+                        help='temperature for iw decoding (default: 1.0)')
+    parser.add_argument('--src_classifier_path', type=str, default='../wolf/modules/classifier/ctv1_classifier32_embed_nr/val_f1=0.9580.ckpt',
+                             help='Filepath of pretrained semantic classifier weights.')
+    parser.add_argument('--gpus', type=int, default=1, help='Number of gpus to use.')
+    parser.add_argument('--name', type=str, required=False, help='Experiment name.', default="test")
+    parser.add_argument('--checkpoint', type=str, default=None, help='If specified, resumes training from specified checkpoint.')
 
     return parser.parse_args()
 
@@ -110,7 +119,7 @@ def parse_distributed_args():
     parser.add_argument('--amsgrad', action='store_true', help='AMS Grad')
     parser.add_argument('--grad_clip', type=float, default=0,
                         help='max norm for gradient clip (default 0: no clip')
-    parser.add_argument('--dataset', choices=['cifar10', 'lsun', 'imagenet', 'celeba'],
+    parser.add_argument('--dataset', choices=['ct', 'xray', 'mnist'],
                         help='data set', required=True)
     parser.add_argument('--category', choices=[None, 'bedroom', 'tower', 'church_outdoor'],
                         help='category', default=None)

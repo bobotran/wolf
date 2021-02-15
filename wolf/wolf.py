@@ -6,13 +6,14 @@ from typing import Dict, Tuple
 import torch
 import torch.nn as nn
 import torch.distributed as dist
-from apex.parallel import DistributedDataParallel, convert_syncbn_model
+# from apex.parallel import DistributedDataParallel, convert_syncbn_model
 
 from wolf.data.image import preprocess, postprocess
 from wolf.modules import DeQuantizer
 from wolf.modules import Discriminator
 from wolf.modules import Generator
 
+from wolf.utils import squeeze2d, unsqueeze2d
 
 class WolfCore(nn.Module):
     """
@@ -48,8 +49,8 @@ class WolfCore(nn.Module):
         return z
 
     def encode(self, data, y=None, n_bits=8, nsamples=1, random=False):
-        size = data.size()
         x = preprocess(data, n_bits)
+        size = x.size()
         # [batch, nsamples, dim]
         z, _ = self.discriminator.sample_from_posterior(x, y=y, nsamples=nsamples, random=random)
         if random:
@@ -84,16 +85,17 @@ class WolfCore(nn.Module):
         #     z = z[:, 0] if z is not None else z
         #     u = u[:, 0:1]
         #     # [batch, channels, height, width]
-        #     x = preprocess(data, n_bits, u).squeeze(1)
+        #     x = preprocess(data, n_bits, u).squeeze2d(1)
         #     # [batch]
         #     log_probs_gen = self.generator.log_probability(x, h=z)
         # else:
-        size = data.size()
+        size = x.size()
         # [batch*nsamples, channels, height, width]
         x = preprocess(data, n_bits, u).view(-1, size[1], size[2], size[3])
         # [batch*nsamples, dim]
         z = z.view(-1, z.size(2)) if z is not None else z
         # [batch]
+
         log_probs_gen = self.generator.log_probability(x, h=z).view(size[0], nsamples).mean(dim=1)
 
         loss_gen = log_probs_gen * -1.

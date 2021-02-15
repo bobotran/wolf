@@ -10,6 +10,7 @@ from wolf.modules.discriminators.discriminator import Discriminator
 from wolf.modules.encoders.encoder import Encoder
 from wolf.modules.discriminators.priors.prior import Prior
 
+from wolf.utils import unsqueeze2d
 
 class GaussianDiscriminator(Discriminator):
     def __init__(self, encoder: Encoder, in_dim, dim, prior: Prior):
@@ -20,6 +21,7 @@ class GaussianDiscriminator(Discriminator):
         self.prior = prior
 
     def forward(self, x):
+        x = unsqueeze2d(x)
         c = self.encoder(x)
         c = self.fc(c)
         mu, logvar = c.chunk(2, dim=1)
@@ -77,6 +79,7 @@ class GaussianDiscriminator(Discriminator):
 
     @overrides
     def init(self, x, y=None, init_scale=1.0):
+        x = unsqueeze2d(x)
         with torch.no_grad():
             c = self.encoder.init(x, init_scale=init_scale)
             c = self.fc.init(c, init_scale=0.01 * init_scale)

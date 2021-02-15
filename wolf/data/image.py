@@ -4,7 +4,7 @@ import numpy as np
 
 import torch
 from torchvision import datasets, transforms
-
+from wolf.utils import squeeze2d, unsqueeze2d
 
 def load_datasets(dataset, image_size, data_path):
     if dataset == 'omniglot':
@@ -151,6 +151,7 @@ def binarize_data(data):
 
 
 def preprocess(img, n_bits, noise=None):
+    img = squeeze2d(img)
     n_bins = 2. ** n_bits
     # rescale to 255
     img = img.mul(255)
@@ -163,10 +164,12 @@ def preprocess(img, n_bits, noise=None):
     # normalize
     img = img.div(n_bins)
     img = (img - 0.5).div(0.5)
+    
     return img
 
 
 def postprocess(img, n_bits):
+    
     n_bins = 2. ** n_bits
     # re-normalize
     img = img.mul(0.5) + 0.5
@@ -174,4 +177,5 @@ def postprocess(img, n_bits):
     # scale
     img = torch.floor(img) * (256. / n_bins)
     img = img.clamp(0, 255).div(255)
+    img = unsqueeze2d(img)
     return img
