@@ -91,6 +91,7 @@ class Flow2Flow(pl.LightningModule):
     self.log('g grad norm', total_grad_norm(self.wolf.parameters()), prog_bar=True, logger=True)
 
   def training_step(self, batch, batch_idx):
+    self.wolf.train()
     img = batch[0]
 
     loss_gen, loss_kl, loss_dequant = self.wolf.loss(img, n_bits=self.hparams.n_bits, nsamples=1)

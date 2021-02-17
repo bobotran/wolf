@@ -88,7 +88,7 @@ if __name__ == '__main__':
   )
   best_bpd = ModelCheckpoint(
       dirpath='./checkpoints/{}'.format(args.name),
-      filename='{bpd:.4f}',
+      filename='{Train MLE Loss:.4f}',
       monitor='Train MLE Loss',
       mode='min'
   )
