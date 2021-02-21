@@ -178,7 +178,7 @@ class CTDataset(Dataset):
     
     #annotations_file = '../covidxct/{}_COVIDx_CT-2A.txt'.format(stage)
     #annotations_file = '../covidxct_v1/{}_COVIDx-CT.txt'.format(stage)
-    annotations_file = '/tmp/hsperfdata_bobotran/data/{}_COVIDx-CT.txt'.format(
+    annotations_file = '/tmp/hsperfdata_hpdas/data/{}_COVIDx-CT.txt'.format(
         stage)
     # filename class xmin ymin xmax ymax
     # Normal=0, Pneumonia=1, and COVID-19=2
@@ -191,7 +191,7 @@ class CTDataset(Dataset):
     self.annotations = np.array(lines)
     #self.images_dir = '../covidxct/2A_images/2A_images'
     #self.images_dir = '../covidxct_v1/data/COVIDx-CT'
-    self.images_dir = '/tmp/hsperfdata_bobotran/data/COVIDx-CT'
+    self.images_dir = '/tmp/hsperfdata_hpdas/data/COVIDx-CT'
 
     self.grayscale = transforms.Grayscale()
     self.resize = transforms.Resize(resize_shape)
@@ -286,7 +286,7 @@ class ctscansModule(pl.LightningDataModule):
         transforms.Grayscale(),
         transforms.ToTensor()
       ])
-      self.ct_train = datasets.ImageFolder(root='/tmp/hsperfdata_bobotran/synthetic', transform=transform)
+      self.ct_train = datasets.ImageFolder(root='/tmp/hsperfdata_hpdas/synthetic', transform=transform)
     else:
       self.ct_train = CTDataset('train', self.num_channels, self.resize_shape, self.augment)
 
